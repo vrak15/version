@@ -11,8 +11,11 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo '🔨 Building Docker image...'
-                sh 'docker build -t simple-web-app .'
+                echo '🔨 Building Docker image from version directory...'
+                sh '''
+			cd version/
+		docker build -t simple-web-app .
+		'''
             }
         }
 
