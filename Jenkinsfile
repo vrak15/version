@@ -13,7 +13,6 @@ pipeline {
             steps {
                 echo '🔨 Building Docker image from version directory...'
                 sh '''
-			cd version/
 		docker build -t simple-web-app .
 		'''
             }
