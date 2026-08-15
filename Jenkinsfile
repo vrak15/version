@@ -2,47 +2,38 @@ pipeline {
     agent any
 
     stages {
-        stage('Clone Repository') {
+        stage('Checkout Code') {
             steps {
-                echo '✅ Cloning the repository...'
-                // This step is automatic when using "Pipeline script from SCM"
+                git branch: 'main', url: 'https://github.com/<YOUR_GITHUB_USERNAME>/version.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo '🔨 Building Docker image from version directory...'
-                sh '''
-		docker build -t simple-web-app .
-		'''
+                sh 'docker build -t <YOUR_DOCKERHUB_USERNAME>/my-web-app:latest .'
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Login & Push to Docker Hub') {
             steps {
-                echo '🚀 Running Docker container...'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+                    sh '''
+                        echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+                        docker push <YOUR_DOCKERHUB_USERNAME>/my-web-app:latest
+                        docker logout
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
                 sh '''
-                    docker stop simple-web-app || true
-                    docker rm simple-web-app || true
-                    docker run -d --name simple-web-app -p 80:80 simple-web-app
+                    docker stop my-running-app || true
+                    docker rm my-running-app || true
+                    docker run -d --name my-running-app -p 80:80 <YOUR_DOCKERHUB_USERNAME>/my-web-app:latest
                 '''
             }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                echo '✅ App is running on port 80!'
-                sh 'curl -s http://localhost:80 | head -n 5'
-            }
-        }
-    }
-
-    post {
-        always {
-            echo '📋 Pipeline completed!'
-        }
-        failure {
-            echo '❌ Pipeline failed! Check the logs above.'
         }
     }
 }
